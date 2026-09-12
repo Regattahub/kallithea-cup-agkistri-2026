@@ -837,9 +837,69 @@ body.jotform-open #formFrame {
         <div class="result-title" id="resultText"></div>
       </div>
 
-      <div class="actions" id="actions"><button class="btn" id="continueBtn" type="button">ΣΥΝΕΧΕΙΑ</button>
-        <button class="btn secondary" id="newSearchBtn" type="button">ΝΕΑ ΑΝΑΖΗΤΗΣΗ</button>
-      </div>
+    <div class="actions" id="actions">
+  <button class="btn" id="continueBtn" type="button">
+    ΣΥΝΕΧΕΙΑ
+  </button>
+
+  <button class="btn secondary" id="newSearchBtn" type="button">
+    ΝΕΑ ΑΝΑΖΗΤΗΣΗ
+  </button>
+</div>
+
+<div
+  id="crewChoiceBox"
+  style="
+    display:none;
+    max-width:720px;
+    margin:20px auto;
+    border:2px solid #8da170;
+    padding:22px;
+    background:#f8fff1;
+    text-align:center;
+    border-radius:8px;
+  "
+>
+  <div
+    style="
+      font-size:20px;
+      font-weight:700;
+      color:#0d5e92;
+      margin-bottom:12px;
+    "
+  >
+    ΔΗΛΩΣΗ ΠΛΗΡΩΜΑΤΟΣ ΓΙΑ ΤΟΝ 2ο ΑΓΩΝΑ
+  </div>
+
+  <div
+    style="
+      font-size:16px;
+      line-height:1.6;
+      margin-bottom:18px;
+    "
+  >
+    Θα αγωνιστείτε στο ΑΓΚΙΣΤΡΙ 2026 με το ίδιο πλήρωμα
+    που δηλώθηκε στον 1ο αγώνα ΚΟΡΦΟΣ;
+  </div>
+
+  <button
+    class="btn"
+    id="sameCrewBtn"
+    type="button"
+    style="margin:6px;"
+  >
+    ΝΑΙ - ΙΔΙΟ ΠΛΗΡΩΜΑ
+  </button>
+
+  <button
+    class="btn secondary"
+    id="changeCrewBtn"
+    type="button"
+    style="margin:6px;"
+  >
+    ΟΧΙ - ΘΕΛΩ ΑΛΛΑΓΕΣ
+  </button>
+</div>
 
 <div id="crewScreen" style="display:none; max-width:720px; margin:20px auto; border:1px solid #bfb6aa; padding:28px; background:white; text-align:center; border-radius:6px;">
 
@@ -2195,15 +2255,273 @@ async function continueToForm() {
     handleCrewEditReturn();
 
     searchBtn.addEventListener("click", searchBoat);
-    continueBtn.addEventListener("click", showCrewScreen);
+   continueBtn.addEventListener("click", showCrewChoice);
     newSearchBtn.addEventListener("click", resetSearch);
+document.getElementById("changeCrewBtn").addEventListener("click", function () {
+  const choiceBox = document.getElementById("crewChoiceBox");
 
+  if (choiceBox) {
+    choiceBox.style.display = "none";
+  }
+
+  showCrewScreen();
+});
+
+    function getExistingCrewRowsForSameCrew(data) {
+  function normalizeCrewList(list) {
+    if (!Array.isArray(list)) return [];
+
+    return list
+      .map(function (item) {
+        return {
+          name: String(
+            item?.name ||
+            item?.full_name ||
+            item?.fullName ||
+            ""
+          ).trim(),
+
+          card: String(
+            item?.card ||
+            item?.athlete_card ||
+            item?.athleteCard ||
+            ""
+          ).trim(),
+
+          club: String(
+            item?.club || ""
+          ).trim()
+        };
+      })
+      .filter(function (member) {
+        return member.name || member.card || member.club;
+      });
+  }
+
+  const directMembers = normalizeCrewList(data?.crew_members);
+
+  if (directMembers.length) {
+    return directMembers;
+  }
+
+  const sources = [
+    data?.crew_json_after,
+    data?.crew_json_before,
+    data?.crew_json,
+    data?.crew_text
+  ];
+
+  for (const source of sources) {
+    if (!source) continue;
+
+    if (Array.isArray(source)) {
+      const members = normalizeCrewList(source);
+
+      if (members.length) {
+        return members;
+      }
+
+      continue;
+    }
+
+    const text = String(source)
+      .replace(/\r/g, "")
+      .trim();
+
+    if (!text) continue;
+
+    try {
+      const parsed = JSON.parse(text);
+
+      if (Array.isArray(parsed)) {
+        const members = normalizeCrewList(parsed);
+
+        if (members.length) {
+          return members;
+        }
+      }
+    } catch (error) {
+      // Δεν είναι JSON — συνεχίζουμε με την προεπισκόπηση πληρώματος.
+    }
+
+    const crew = [];
+
+    text
+      .split("\n")
+      .map(function (line) {
+        return line.trim();
+      })
+      .filter(function (line) {
+        if (!line) return false;
+        if (/^Α\/Α(?:\s|$)/i.test(line)) return false;
+        if (/^[\s─—\-_=]+$/u.test(line)) return false;
+        return true;
+      })
+      .forEach(function (line) {
+        const match = line.match(
+          /^\s*\d+\s+(.+?)\s+(\d+)\s+(.+?)\s*$/u
+        );
+
+        if (!match) return;
+
+        crew.push({
+          name: match[1].trim(),
+          card: match[2].trim(),
+          club: match[3].trim()
+        });
+      });
+
+    if (crew.length) {
+      return crew;
+    }
+  }
+
+  return [];
+}
+
+
+document.getElementById("sameCrewBtn").addEventListener("click", async function () {
+  if (!lastFoundData) {
+    alert("Δεν υπάρχουν στοιχεία αρχικής υποβολής.");
+    return;
+  }
+
+  const sameCrewButton = this;
+  const choiceBox = document.getElementById("crewChoiceBox");
+
+  const existingCrew =
+    getExistingCrewRowsForSameCrew(lastFoundData);
+
+  if (!existingCrew.length) {
+    alert(
+      "Δεν βρέθηκε το υπάρχον πλήρωμα του σκάφους.\n\n" +
+      "Δεν θα γίνει καμία καταχώριση. Παρακαλώ επιλέξτε αλλαγή πληρώματος ή επικοινωνήστε με τη Γραμματεία Αγώνα."
+    );
+    return;
+  }
+
+  try {
+    sameCrewButton.disabled = true;
+    sameCrewButton.textContent = "ΠΑΡΑΚΑΛΩ ΠΕΡΙΜΕΝΕΤΕ...";
+
+    showJotformLoading();
+
+    setStatus(
+      "Καταχωρείται το ίδιο πλήρωμα για το ΑΓΚΙΣΤΡΙ 2026...",
+      false,
+      true,
+      false
+    );
+
+    const response = await updateCrewThroughAppsScript(
+      lastFoundData,
+      existingCrew
+    );
+
+    const editUrl = String(
+      response?.submissionEditUrl ||
+      lastFoundData?.submission_edit_url ||
+      lastFoundData?.submissionEditUrl ||
+      ""
+    ).trim();
+
+    if (!editUrl) {
+      throw new Error(
+        "Η καταχώριση έγινε, αλλά δεν βρέθηκε η διεύθυνση της Jotform."
+      );
+    }
+
+    if (choiceBox) {
+      choiceBox.style.display = "none";
+    }
+
+    formFrame.addEventListener(
+      "load",
+      hideJotformLoading,
+      { once: true }
+    );
+
+    formFrame.src = editUrl;
+    formWrap.style.display = "block";
+
+    document.body.classList.add("jotform-open");
+    document.documentElement.classList.add(
+      "jotform-open-html"
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "auto"
+    });
+
+  } catch (error) {
+    hideJotformLoading();
+
+    console.error(
+      "Σφάλμα καταχώρισης ίδιου πληρώματος:",
+      error
+    );
+
+    alert(
+      "Η καταχώριση δεν ολοκληρώθηκε.\n\n" +
+      (error?.message || "Άγνωστο σφάλμα.")
+    );
+
+    sameCrewButton.disabled = false;
+    sameCrewButton.textContent =
+      "ΝΑΙ - ΙΔΙΟ ΠΛΗΡΩΜΑ";
+  }
+});
+    
     sailInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
         e.preventDefault();
         searchBoat();
       }
     });
+function showCrewChoice() {
+  const acceptTerms = document.getElementById("acceptTermsCheck");
+
+  if (acceptTerms && !acceptTerms.checked) {
+    alert(
+      "Παρακαλούμε αποδεχθείτε την Πολιτική Απορρήτου και τους Όρους Χρήσης για να συνεχίσετε."
+    );
+
+    acceptTerms.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    return;
+  }
+
+  if (!lastFoundData) {
+    setStatus(
+      "Δεν υπάρχουν στοιχεία αρχικής υποβολής για συνέχεια.",
+      true,
+      false,
+      true
+    );
+    return;
+  }
+
+  const choiceBox = document.getElementById("crewChoiceBox");
+
+  if (!choiceBox) {
+    alert("Δεν βρέθηκε το πλαίσιο επιλογής πληρώματος.");
+    return;
+  }
+
+  resultCard.style.display = "none";
+  actions.style.display = "none";
+
+  choiceBox.style.display = "block";
+
+  choiceBox.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}    
 function showCrewScreen() {
   const acceptTerms = document.getElementById("acceptTermsCheck");
 
