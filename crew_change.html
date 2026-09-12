@@ -2143,24 +2143,11 @@ function openNewAgkistriForm(prefillUrl) {
     );
   }
 
-  formFrame.addEventListener(
-    "load",
-    hideJotformLoading,
-    { once: true }
-  );
-
-  formFrame.src = url;
-  formWrap.style.display = "block";
-
-  document.body.classList.add("jotform-open");
-  document.documentElement.classList.add(
-    "jotform-open-html"
-  );
-
-  window.scrollTo({
-    top: 0,
-    behavior: "auto"
-  });
+  // ΑΓΚΙΣΤΡΙ 2026 - ΝΕΑ ΥΠΟΒΟΛΗ:
+  // Ανοίγουμε τη δημόσια Jotform ως κανονική σελίδα και όχι μέσα σε iframe.
+  // Έτσι αποφεύγουμε κολλήματα/επιστροφές της Jotform κατά το prefill.
+  // Δεν γίνεται καμία εγγραφή ή αλλαγή στην παλιά υποβολή ΚΟΡΦΟΥ.
+  window.location.assign(url);
 }
 
 async function continueToForm() {
