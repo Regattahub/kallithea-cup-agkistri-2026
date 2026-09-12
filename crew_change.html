@@ -1091,9 +1091,12 @@ const NOTICE_INFO_TEXT =
       aph_initial: "typeA439",
       dynamic_allowance: "dynamic_allowance",
       orc_class_check: "orc_class_check",
-captain_name: "skipperName",
-captain_club: "skipperClub",
-captain_card: "skipperCard",
+captain_name: "typeA93",
+captain_club: "input33",
+captain_card: "input55",
+second_captain_name: "second_captain_name",
+second_captain_card: "second_captain_card",
+second_captain_club: "second_captain_club",
      original_submission_id: "originalSubmissionId",
 crew_text: "input514",
 crew_1_name: "crew1_name",
@@ -1472,7 +1475,6 @@ function buildPrefillUrl(data, options = {}) {
   params.set(fieldNames.orc_class_check, data.orc_class_check || "");
 
   params.set(fieldNames.captain_name, data.captain_name || "");
-  params.set("skipperName", data.captain_name || "");
 
   const captainClub =
     options.captainClub ||
@@ -1499,6 +1501,20 @@ function buildPrefillUrl(data, options = {}) {
     "";
 
   params.set(fieldNames.captain_card, captainCard);
+
+  // Δεύτερος κυβερνήτης - πραγματικά Unique Names της Jotform ΑΓΚΙΣΤΡΙ.
+  params.set(
+    fieldNames.second_captain_name,
+    data.second_captain_name || ""
+  );
+  params.set(
+    fieldNames.second_captain_card,
+    data.second_captain_card || ""
+  );
+  params.set(
+    fieldNames.second_captain_club,
+    data.second_captain_club || ""
+  );
 
   // Κρατάμε το ID της υποβολής ΚΟΡΦΟΥ μόνο ως αναφορά.
   // ΔΕΝ ανοίγουμε ούτε ενημερώνουμε την παλιά υποβολή.
@@ -1627,23 +1643,6 @@ function buildPrefillUrl(data, options = {}) {
     fieldNames.wosr_member_2,
     wosrMember2Name
   );
-
-  for (let i = 1; i <= 10; i++) {
-    const row = crewPdfRows[i - 1] || {};
-
-    params.set(
-      fieldNames[`crew_${i}_name`],
-      row.name || ""
-    );
-    params.set(
-      fieldNames[`crew_${i}_card`],
-      row.card || ""
-    );
-    params.set(
-      fieldNames[`crew_${i}_club`],
-      shortClubName(row.club || "")
-    );
-  }
 
   params.set(fieldNames.crew_preview, crewTextForPreview);
   params.set("crewAdded", crewTextForPreview);
