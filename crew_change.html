@@ -872,7 +872,6 @@ body.jotform-open #formFrame {
   </div>
 
   <div
- <div
   style="
     font-size:22px;
     line-height:1.5;
@@ -1405,19 +1404,56 @@ function getCrewPdfRows() {
 
   return rows;
 }
-function buildPrefillUrl(data) {
+function buildPrefillUrl(data, options = {}) {
   const params = new URLSearchParams();
- 
+
+  const crewPdfRows = Array.isArray(options.crewRows)
+    ? options.crewRows
+    : getCrewPdfRows();
+
+  const sameCrewMode = options.sameCrew === true;
+
+  function buildCrewTextFromRows(rows) {
+    const cleanText = (v) =>
+      String(v || "").replace(/\+/g, " ").trim();
+
+    const lines = [
+      "Α/Α    ΟΝΟΜΑΤΕΠΩΝΥΜΟ    ΑΡ. ΔΕΛΤΙΟΥ    ΟΜΙΛΟΣ",
+      "────────────────────────────────────────────────────────"
+    ];
+
+    rows.forEach((row, index) => {
+      lines.push(
+        (index + 1) + ". " +
+        cleanText(row.name) + " | " +
+        cleanText(row.card) + " | " +
+        cleanText(row.club)
+      );
+    });
+
+    return lines.join("\n");
+  }
 
   params.set(fieldNames.yacht_name, data.yacht_name || "");
   params.set(fieldNames.sail_letters, data.sail_letters || "");
- params.set(fieldNames.sail_number, data.sail_number || data.sailNumber || data.sail_no || data.number || data["ΑΡΙΘΜΟΣ ΠΑΝΙΟΥ"] || "");
+  params.set(
+    fieldNames.sail_number,
+    data.sail_number ||
+    data.sailNumber ||
+    data.sail_no ||
+    data.number ||
+    data["ΑΡΙΘΜΟΣ ΠΑΝΙΟΥ"] ||
+    ""
+  );
   params.set(fieldNames.yacht_type, data.yacht_type || "");
   params.set(fieldNames.club, data.club || "");
 
   params.set(fieldNames.aph, formatForJotformNumber(data.aph_initial));
   params.set(fieldNames.cert_date, data.certdate_last || "");
-  params.set(fieldNames.cert_type, data.initial_category || data.Initial_Category || "");
+  params.set(
+    fieldNames.cert_type,
+    data.initial_category || data.Initial_Category || ""
+  );
   params.set(fieldNames.saronic_cat, "");
   params.set(fieldNames.aph_club, formatForJotformNumber(data.aph_club));
   params.set(fieldNames.aph_intl, formatForJotformNumber(data.aph_intl));
@@ -1425,128 +1461,230 @@ function buildPrefillUrl(data) {
   params.set(fieldNames.aph_dh, formatForJotformNumber(data.aph_dh));
   params.set(fieldNames.last_certificate, data.certdate_last || "");
   params.set(fieldNames.special_cat, data.special_category || "");
-  params.set(fieldNames.aph_initial, formatForJotformNumber(data.aph_initial));
-  params.set(fieldNames.dynamic_allowance, formatForJotformNumber(data.dynamic_allowance));
+  params.set(
+    fieldNames.aph_initial,
+    formatForJotformNumber(data.aph_initial)
+  );
+  params.set(
+    fieldNames.dynamic_allowance,
+    formatForJotformNumber(data.dynamic_allowance)
+  );
   params.set(fieldNames.orc_class_check, data.orc_class_check || "");
 
-params.set(fieldNames.captain_name, data.captain_name || "");
+  params.set(fieldNames.captain_name, data.captain_name || "");
   params.set("skipperName", data.captain_name || "");
-  params.set(fieldNames.captain_club, document.querySelector("#crewScreen .club")?.innerText || "");
-const captainCard = data.captain_card || data.skipper_card || data.skipperCard || data.captainCard || data["ΑΡΙΘΜΟΣ  ΑΘΛ. ΔΕΛΤΙΟΥ ΕΙΟ"] || data["ΑΡΙΘΜΟΣ ΑΘΛ. ΔΕΛΤΙΟΥ ΕΙΟ"] || data["ΑΡΙΘΜΟΣ  ΑΘΛ. ΔΕΛΤΙΟΥ ΚΥΒΕΡΝΗΤΗ"] || data["ΑΡΙΘΜΟΣ ΑΘΛ. ΔΕΛΤΙΟΥ ΚΥΒΕΡΝΗΤΗ"] || document.querySelector('#crewScreen input:not([type="checkbox"]):not([type="radio"])')?.value || "";
 
-params.set(fieldNames.captain_card, captainCard);
-  const originalSubmissionId = data.submission_id || data.submissionId || data.originalSubmissionId || data["Submission ID"] || data["SubmissionID"] || "";
+  const captainClub =
+    options.captainClub ||
+    data.captain_club ||
+    data.skipper_club ||
+    data.skipperClub ||
+    document.querySelector("#crewScreen .club")?.innerText ||
+    "";
 
-params.set(fieldNames.original_submission_id, originalSubmissionId);
- const crewTextForPreview = buildCrewTextForPdf();
- params.set(fieldNames.crew_text, crewTextForPreview);
+  params.set(fieldNames.captain_club, captainClub);
 
- // Το ίδιο κείμενο το στέλνουμε και με καθαρό Unique Name,
- // ώστε να μπορεί να γεμίσει ένα πεδίο Long Text με Unique Name: crew_text
- params.set("crew_text", crewTextForPreview);
+  const captainCard =
+    data.captain_card ||
+    data.skipper_card ||
+    data.skipperCard ||
+    data.captainCard ||
+    data["ΑΡΙΘΜΟΣ  ΑΘΛ. ΔΕΛΤΙΟΥ ΕΙΟ"] ||
+    data["ΑΡΙΘΜΟΣ ΑΘΛ. ΔΕΛΤΙΟΥ ΕΙΟ"] ||
+    data["ΑΡΙΘΜΟΣ  ΑΘΛ. ΔΕΛΤΙΟΥ ΚΥΒΕΡΝΗΤΗ"] ||
+    data["ΑΡΙΘΜΟΣ ΑΘΛ. ΔΕΛΤΙΟΥ ΚΥΒΕΡΝΗΤΗ"] ||
+    document.querySelector(
+      '#crewScreen input:not([type="checkbox"]):not([type="radio"])'
+    )?.value ||
+    "";
 
-  const crewPdfRows = getCrewPdfRows();
-const crewPdfAA = [];
-const crewPdfName = [];
-const crewPdfCard = [];
-const crewPdfClub = [];
+  params.set(fieldNames.captain_card, captainCard);
 
-crewPdfRows.forEach((row, index) => {
-  crewPdfAA.push(String(index + 1));
-  crewPdfName.push(cutForPdf(row.name || "", 24));
-  crewPdfCard.push(row.card || "");
-  crewPdfClub.push(cutForPdf(shortClubName(row.club || ""), 28));
-});
+  // Κρατάμε το ID της υποβολής ΚΟΡΦΟΥ μόνο ως αναφορά.
+  // ΔΕΝ ανοίγουμε ούτε ενημερώνουμε την παλιά υποβολή.
+  const originalSubmissionId =
+    data.submission_id ||
+    data.submissionId ||
+    data.originalSubmissionId ||
+    data["Submission ID"] ||
+    data["SubmissionID"] ||
+    "";
 
-params.set(fieldNames.crew_pdf_aa, crewPdfAA.join("\n"));
-params.set(fieldNames.crew_pdf_name, crewPdfName.join("\n"));
-params.set(fieldNames.crew_pdf_card, crewPdfCard.join("\n"));
-params.set(fieldNames.crew_pdf_club, crewPdfClub.join("\n"));
-  const removedRows = getRemovedCrewRows();
-const removedPdfAA = [];
-const removedPdfName = [];
-const removedPdfCard = [];
-const removedPdfClub = [];
+  params.set(
+    fieldNames.original_submission_id,
+    originalSubmissionId
+  );
 
-removedRows.forEach((row, index) => {
-  removedPdfAA.push(String(index + 1));
-  removedPdfName.push(cutForPdf(row.name || "", 24));
-  removedPdfCard.push(row.card || "");
-  removedPdfClub.push(cutForPdf(shortClubName(row.club || ""), 28));
-});
+  const crewTextForPreview =
+    buildCrewTextFromRows(crewPdfRows);
 
-params.set(fieldNames.removed_pdf_aa, removedPdfAA.join("\n"));
-params.set(fieldNames.removed_pdf_name, removedPdfName.join("\n"));
-params.set(fieldNames.removed_pdf_card, removedPdfCard.join("\n"));
-params.set(fieldNames.removed_pdf_club, removedPdfClub.join("\n"));
-  const removedTextForPreview = buildRemovedCrewTextForPdf();
-params.set("crewRemoved", removedTextForPreview);
-const wosr1Value = document.getElementById("wosrMember1")?.value || "";
-const wosr2Value = document.getElementById("wosrMember2")?.value || "";
-const captainState = getCaptainState();
+  params.set(fieldNames.crew_text, crewTextForPreview);
+  params.set("crew_text", crewTextForPreview);
 
-function getWosrName(value) {
-  if (value === "captain") {
-    return captainState.name || "";
+  const crewPdfAA = [];
+  const crewPdfName = [];
+  const crewPdfCard = [];
+  const crewPdfClub = [];
+
+  crewPdfRows.forEach((row, index) => {
+    crewPdfAA.push(String(index + 1));
+    crewPdfName.push(cutForPdf(row.name || "", 24));
+    crewPdfCard.push(row.card || "");
+    crewPdfClub.push(
+      cutForPdf(shortClubName(row.club || ""), 28)
+    );
+  });
+
+  params.set(fieldNames.crew_pdf_aa, crewPdfAA.join("\n"));
+  params.set(fieldNames.crew_pdf_name, crewPdfName.join("\n"));
+  params.set(fieldNames.crew_pdf_card, crewPdfCard.join("\n"));
+  params.set(fieldNames.crew_pdf_club, crewPdfClub.join("\n"));
+
+  const removedRows = sameCrewMode
+    ? []
+    : getRemovedCrewRows();
+
+  const removedPdfAA = [];
+  const removedPdfName = [];
+  const removedPdfCard = [];
+  const removedPdfClub = [];
+
+  removedRows.forEach((row, index) => {
+    removedPdfAA.push(String(index + 1));
+    removedPdfName.push(cutForPdf(row.name || "", 24));
+    removedPdfCard.push(row.card || "");
+    removedPdfClub.push(
+      cutForPdf(shortClubName(row.club || ""), 28)
+    );
+  });
+
+  params.set(
+    fieldNames.removed_pdf_aa,
+    removedPdfAA.join("\n")
+  );
+  params.set(
+    fieldNames.removed_pdf_name,
+    removedPdfName.join("\n")
+  );
+  params.set(
+    fieldNames.removed_pdf_card,
+    removedPdfCard.join("\n")
+  );
+  params.set(
+    fieldNames.removed_pdf_club,
+    removedPdfClub.join("\n")
+  );
+
+  params.set(
+    "crewRemoved",
+    sameCrewMode ? "" : buildRemovedCrewTextForPdf()
+  );
+
+  let wosrMember1Name =
+    String(options.wosrMember1Name || "").trim();
+
+  let wosrMember2Name =
+    String(options.wosrMember2Name || "").trim();
+
+  if (!wosrMember1Name || !wosrMember2Name) {
+    const wosr1Value =
+      document.getElementById("wosrMember1")?.value || "";
+
+    const wosr2Value =
+      document.getElementById("wosrMember2")?.value || "";
+
+    const captainState = getCaptainState();
+
+    function getWosrName(value) {
+      if (value === "captain") {
+        return captainState.name || data.captain_name || "";
+      }
+
+      const index = parseInt(value, 10) - 1;
+      return crewPdfRows[index]?.name || "";
+    }
+
+    if (!wosrMember1Name) {
+      wosrMember1Name =
+        getWosrName(wosr1Value) ||
+        data.wosr_member_1 ||
+        "";
+    }
+
+    if (!wosrMember2Name) {
+      wosrMember2Name =
+        getWosrName(wosr2Value) ||
+        data.wosr_member_2 ||
+        "";
+    }
   }
 
-  const index = parseInt(value, 10) - 1;
-  return crewPdfRows[index]?.name || "";
-}
+  params.set(
+    fieldNames.wosr_member_1,
+    wosrMember1Name
+  );
+  params.set(
+    fieldNames.wosr_member_2,
+    wosrMember2Name
+  );
 
-params.set(fieldNames.wosr_member_1, getWosrName(wosr1Value));
-params.set(fieldNames.wosr_member_2, getWosrName(wosr2Value));
-  
-for (let i = 1; i <= 10; i++) {
-  const row = crewPdfRows[i - 1] || {};
+  for (let i = 1; i <= 10; i++) {
+    const row = crewPdfRows[i - 1] || {};
 
-  params.set(fieldNames[`crew_${i}_name`], row.name || "");
-  params.set(fieldNames[`crew_${i}_card`], row.card || "");
-  params.set(fieldNames[`crew_${i}_club`], shortClubName(row.club || ""));
-}
+    params.set(
+      fieldNames[`crew_${i}_name`],
+      row.name || ""
+    );
+    params.set(
+      fieldNames[`crew_${i}_card`],
+      row.card || ""
+    );
+    params.set(
+      fieldNames[`crew_${i}_club`],
+      shortClubName(row.club || "")
+    );
+  }
 
-let crewPreview = "";
-
-crewPdfRows.forEach((row, index) => {
-  crewPreview +=
-    (index + 1) + ". " +
-    (row.name || "") + " | " +
-    (row.card || "") + " | " +
-    shortClubName(row.club || "") +
-    "\n";
-});
-
-params.set(fieldNames.crew_preview, crewTextForPreview);
+  params.set(fieldNames.crew_preview, crewTextForPreview);
   params.set("crewAdded", crewTextForPreview);
 
-// Κρατάμε και όλο το πλήρωμα σε JSON για επόμενη φάση/πίνακα μέσα στη Jotform
-params.set(fieldNames.crew_json, JSON.stringify(
-  crewPdfRows.map((row) => ({
-    name: row.name || "",
-    card: row.card || "",
-    club: shortClubName(row.club || "")
-  }))
-));
+  params.set(
+    fieldNames.crew_json,
+    JSON.stringify(
+      crewPdfRows.map((row) => ({
+        name: row.name || "",
+        card: row.card || "",
+        club: shortClubName(row.club || "")
+      }))
+    )
+  );
 
-const submissionEditUrl = String(
-  data.submission_edit_url ||
-  data.submissionEditUrl ||
-  data["Submission Edit URL"] ||
-  ""
-).trim();
+  // ΝΕΑ υποβολή για ΑΓΚΙΣΤΡΙ.
+  // Ποτέ Submission Edit URL του ΚΟΡΦΟΥ.
+  const newFormBase = String(
+    CREW_CHANGE_FORM_URL || JOTFORM_BASE_URL || ""
+  ).trim();
 
-if (!submissionEditUrl) {
-  alert("Δεν βρέθηκε το Edit Link της αρχικής υποβολής.");
-  throw new Error("Missing Submission Edit URL");
-}
+  if (!newFormBase) {
+    throw new Error(
+      "Δεν βρέθηκε η διεύθυνση της φόρμας ΑΓΚΙΣΤΡΙ 2026."
+    );
+  }
 
-const separator = submissionEditUrl.includes("?") ? "&" : "?";
+  const separator =
+    newFormBase.includes("?") ? "&" : "?";
 
-return submissionEditUrl + separator + Array.from(params.entries())
-  .map(([key, value]) =>
-    encodeURIComponent(key) + "=" + encodeURIComponent(value)
-  )
-  .join("&");
+  return (
+    newFormBase +
+    separator +
+    Array.from(params.entries())
+      .map(([key, value]) =>
+        encodeURIComponent(key) +
+        "=" +
+        encodeURIComponent(value)
+      )
+      .join("&")
+  );
 }
 
 function shortClubName(club) {
@@ -1996,6 +2134,35 @@ function hideJotformLoading() {
   overlay.setAttribute("aria-hidden", "true");
 }
 
+function openNewAgkistriForm(prefillUrl) {
+  const url = String(prefillUrl || "").trim();
+
+  if (!url) {
+    throw new Error(
+      "Δεν δημιουργήθηκε η διεύθυνση της νέας φόρμας ΑΓΚΙΣΤΡΙ."
+    );
+  }
+
+  formFrame.addEventListener(
+    "load",
+    hideJotformLoading,
+    { once: true }
+  );
+
+  formFrame.src = url;
+  formWrap.style.display = "block";
+
+  document.body.classList.add("jotform-open");
+  document.documentElement.classList.add(
+    "jotform-open-html"
+  );
+
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"
+  });
+}
+
 async function continueToForm() {
   const acceptTerms =
     document.getElementById("acceptTermsCheck");
@@ -2061,11 +2228,12 @@ async function continueToForm() {
 
     if (continueButton) {
       continueButton.disabled = true;
-      continueButton.textContent = "ΑΠΟΘΗΚΕΥΣΗ...";
+      continueButton.textContent =
+        "ΑΝΟΙΓΕΙ Η ΝΕΑ ΦΟΡΜΑ...";
     }
 
     setStatus(
-      "Αποθηκεύονται οι αλλαγές πληρώματος...",
+      "Ανοίγει νέα δήλωση πληρώματος για το ΑΓΚΙΣΤΡΙ 2026...",
       false,
       true,
       true
@@ -2073,59 +2241,30 @@ async function continueToForm() {
 
     saveEntryState();
 
-    const response = await updateCrewThroughAppsScript(
-      lastFoundData,
-      crewRowsForCheck
-    );
+    // Νέα φόρμα ΑΓΚΙΣΤΡΙ - δεν γράφουμε στην υποβολή ΚΟΡΦΟΥ.
+    const newFormUrl =
+      buildPrefillUrl(lastFoundData);
 
-    const editUrl = String(
-      response.submissionEditUrl ||
-      lastFoundData.submission_edit_url ||
-      lastFoundData.submissionEditUrl ||
-      ""
-    ).trim();
-
-    if (!editUrl) {
-      throw new Error(
-        "Η ενημέρωση έγινε, αλλά δεν βρέθηκε το Edit URL."
-      );
-    }
-
-    setStatus(
-      "Οι αλλαγές αποθηκεύτηκαν επιτυχώς.",
-      false,
-      false,
-      true
-    );
-
-    formFrame.addEventListener("load", hideJotformLoading, { once: true });
-    formFrame.src = editUrl;
-    formWrap.style.display = "block";
-
-    document.body.classList.add("jotform-open");
-    document.documentElement.classList.add(
-      "jotform-open-html"
-    );
-
-    window.scrollTo({
-      top: 0,
-      behavior: "auto"
-    });
+    openNewAgkistriForm(newFormUrl);
 
   } catch (error) {
     hideJotformLoading();
-    console.error("Σφάλμα ενημέρωσης πληρώματος:", error);
+
+    console.error(
+      "Σφάλμα ανοίγματος νέας φόρμας:",
+      error
+    );
 
     setStatus(
       error.message ||
-      "Δεν ήταν δυνατή η αποθήκευση των αλλαγών.",
+      "Δεν ήταν δυνατό να ανοίξει η νέα φόρμα ΑΓΚΙΣΤΡΙ.",
       true,
       false,
       true
     );
 
     alert(
-      "Η αποθήκευση δεν ολοκληρώθηκε.\n\n" +
+      "Η νέα φόρμα δεν άνοιξε.\n\n" +
       (error.message || "Άγνωστο σφάλμα.")
     );
 
@@ -2393,7 +2532,8 @@ document.getElementById("sameCrewBtn").addEventListener("click", async function 
   }
 
   const sameCrewButton = this;
-  const choiceBox = document.getElementById("crewChoiceBox");
+  const choiceBox =
+    document.getElementById("crewChoiceBox");
 
   const existingCrew =
     getExistingCrewRowsForSameCrew(lastFoundData);
@@ -2408,68 +2548,50 @@ document.getElementById("sameCrewBtn").addEventListener("click", async function 
 
   try {
     sameCrewButton.disabled = true;
-    sameCrewButton.textContent = "ΠΑΡΑΚΑΛΩ ΠΕΡΙΜΕΝΕΤΕ...";
+    sameCrewButton.textContent =
+      "ΑΝΟΙΓΕΙ Η ΝΕΑ ΦΟΡΜΑ...";
 
     showJotformLoading();
 
     setStatus(
-      "Καταχωρείται το ίδιο πλήρωμα για το ΑΓΚΙΣΤΡΙ 2026...",
+      "Ανοίγει νέα δήλωση για το ΑΓΚΙΣΤΡΙ 2026 με το ίδιο πλήρωμα...",
       false,
       true,
       false
     );
 
-    const response = await updateCrewThroughAppsScript(
+    // Νέα Jotform ΑΓΚΙΣΤΡΙ.
+    // Η παλιά υποβολή ΚΟΡΦΟΥ μένει απολύτως ανέπαφη.
+    const newFormUrl = buildPrefillUrl(
       lastFoundData,
-      existingCrew
+      {
+        crewRows: existingCrew,
+        sameCrew: true,
+        captainClub:
+          lastFoundData.captain_club || "",
+        wosrMember1Name:
+          lastFoundData.wosr_member_1 || "",
+        wosrMember2Name:
+          lastFoundData.wosr_member_2 || ""
+      }
     );
-
-    const editUrl = String(
-      response?.submissionEditUrl ||
-      lastFoundData?.submission_edit_url ||
-      lastFoundData?.submissionEditUrl ||
-      ""
-    ).trim();
-
-    if (!editUrl) {
-      throw new Error(
-        "Η καταχώριση έγινε, αλλά δεν βρέθηκε η διεύθυνση της Jotform."
-      );
-    }
 
     if (choiceBox) {
       choiceBox.style.display = "none";
     }
 
-    formFrame.addEventListener(
-      "load",
-      hideJotformLoading,
-      { once: true }
-    );
-
-    formFrame.src = editUrl;
-    formWrap.style.display = "block";
-
-    document.body.classList.add("jotform-open");
-    document.documentElement.classList.add(
-      "jotform-open-html"
-    );
-
-    window.scrollTo({
-      top: 0,
-      behavior: "auto"
-    });
+    openNewAgkistriForm(newFormUrl);
 
   } catch (error) {
     hideJotformLoading();
 
     console.error(
-      "Σφάλμα καταχώρισης ίδιου πληρώματος:",
+      "Σφάλμα ανοίγματος ίδιας δήλωσης πληρώματος:",
       error
     );
 
     alert(
-      "Η καταχώριση δεν ολοκληρώθηκε.\n\n" +
+      "Η νέα φόρμα δεν άνοιξε.\n\n" +
       (error?.message || "Άγνωστο σφάλμα.")
     );
 
@@ -2478,7 +2600,7 @@ document.getElementById("sameCrewBtn").addEventListener("click", async function 
       "ΝΑΙ - ΙΔΙΟ ΠΛΗΡΩΜΑ";
   }
 });
-    
+
     sailInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -3801,8 +3923,6 @@ if (changeWosr) {
    const finalCrew = getFinalCrewCandidates();
 
   try {
-    // Εμφανίζουμε πρώτα την οθόνη αναμονής και δίνουμε
-    // στον browser λίγο χρόνο να τη ζωγραφίσει πριν αρχίσει η αποθήκευση.
     showJotformLoading();
 
     const submitButton = document.querySelector(
@@ -3811,45 +3931,34 @@ if (changeWosr) {
 
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.dataset.originalText = submitButton.textContent;
-      submitButton.textContent = "ΠΑΡΑΚΑΛΟΥΜΕ ΠΕΡΙΜΕΝΕΤΕ...";
+      submitButton.dataset.originalText =
+        submitButton.textContent;
+      submitButton.textContent =
+        "ΑΝΟΙΓΕΙ Η ΝΕΑ ΦΟΡΜΑ...";
     }
 
-    await new Promise(resolve => setTimeout(resolve, 80));
+    await new Promise(
+      resolve => setTimeout(resolve, 80)
+    );
 
     setStatus(
-      "Αποθηκεύονται οι αλλαγές πληρώματος...",
+      "Ανοίγει νέα δήλωση πληρώματος για το ΑΓΚΙΣΤΡΙ 2026...",
       false,
       true,
       true
     );
 
-    const response = await updateCrewThroughAppsScript(
-      lastFoundData,
-      finalCrew
-    );
+    // Το finalCrew έχει ήδη χρησιμοποιηθεί από τους ελέγχους.
+    // Η νέα φόρμα παίρνει το τελικό πλήρωμα από την οθόνη,
+    // χωρίς καμία ενημέρωση της παλιάς υποβολής ΚΟΡΦΟΥ.
+    void finalCrew;
 
-    const editUrl = String(
-      response.submissionEditUrl ||
-      lastFoundData.submission_edit_url ||
-      lastFoundData.submissionEditUrl ||
-      ""
-    ).trim();
+    saveEntryState();
 
-    if (!editUrl) {
-      throw new Error(
-        "Η ενημέρωση έγινε, αλλά δεν βρέθηκε το Edit URL."
-      );
-    }
+    const newFormUrl =
+      buildPrefillUrl(lastFoundData);
 
-    setStatus(
-      "Οι αλλαγές πληρώματος αποθηκεύτηκαν επιτυχώς.",
-      false,
-      false,
-      true
-    );
-
-    window.location.href = editUrl;
+    openNewAgkistriForm(newFormUrl);
 
   } catch (error) {
     hideJotformLoading();
@@ -3866,20 +3975,20 @@ if (changeWosr) {
     }
 
     console.error(
-      "Σφάλμα αποθήκευσης αλλαγής πληρώματος:",
+      "Σφάλμα ανοίγματος νέας δήλωσης πληρώματος:",
       error
     );
 
     setStatus(
       error.message ||
-      "Δεν ήταν δυνατή η αποθήκευση των αλλαγών.",
+      "Δεν ήταν δυνατό να ανοίξει η νέα φόρμα ΑΓΚΙΣΤΡΙ.",
       true,
       false,
       true
     );
 
     alert(
-      "Η αποθήκευση δεν ολοκληρώθηκε.\n\n" +
+      "Η νέα φόρμα δεν άνοιξε.\n\n" +
       (error.message || "Άγνωστο σφάλμα.")
     );
   }
