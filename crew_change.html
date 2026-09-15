@@ -2548,25 +2548,32 @@ document.getElementById("sameCrewBtn").addEventListener("click", async function 
 
     // Νέα Jotform ΑΓΚΙΣΤΡΙ.
     // Η παλιά υποβολή ΚΟΡΦΟΥ μένει απολύτως ανέπαφη.
+
     const newFormUrl = buildPrefillUrl(
-      lastFoundData,
-      {
-        crewRows: existingCrew,
-        sameCrew: true,
-        captainClub:
-          lastFoundData.captain_club || "",
-        wosrMember1Name:
-          lastFoundData.wosr_member_1 || "",
-        wosrMember2Name:
-          lastFoundData.wosr_member_2 || ""
-      }
-    );
+  lastFoundData,
+  {
+    crewRows: existingCrew,
+    sameCrew: true,
+    captainClub:
+      lastFoundData.captain_club || "",
+    wosrMember1Name:
+      lastFoundData.wosr_member_1 || "",
+    wosrMember2Name:
+      lastFoundData.wosr_member_2 || ""
+  }
+);
 
-    if (choiceBox) {
-      choiceBox.style.display = "none";
-    }
+// Επειδή επέλεξε ΙΔΙΟ ΠΛΗΡΩΜΑ,
+// ανοίγουμε τη Jotform κατευθείαν στη 2η σελίδα.
+const sameCrewUrl = new URL(newFormUrl);
+sameCrewUrl.searchParams.set("jumpToPage", "2");
 
-    openNewAgkistriForm(newFormUrl);
+if (choiceBox) {
+  choiceBox.style.display = "none";
+}
+
+openNewAgkistriForm(sameCrewUrl.toString());
+
 
   } catch (error) {
     hideJotformLoading();
