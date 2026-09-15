@@ -2565,14 +2565,16 @@ document.getElementById("sameCrewBtn").addEventListener("click", async function 
 
 // Επειδή επέλεξε ΙΔΙΟ ΠΛΗΡΩΜΑ,
 // ανοίγουμε τη Jotform κατευθείαν στη 2η σελίδα.
-const sameCrewUrl = new URL(newFormUrl);
-sameCrewUrl.searchParams.set("jumpToPage", "2");
+const sameCrewUrl =
+  newFormUrl +
+  (newFormUrl.includes("?") ? "&" : "?") +
+  "jumpToPage=2";
 
 if (choiceBox) {
   choiceBox.style.display = "none";
 }
 
-openNewAgkistriForm(sameCrewUrl.toString());
+openNewAgkistriForm(sameCrewUrl);
 
 
   } catch (error) {
