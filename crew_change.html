@@ -3043,10 +3043,9 @@ ${data.second_captain_name ? `
         ΤΙ ΑΛΛΑΓΗ ΘΕΛΕΤΕ ΝΑ ΚΑΝΕΤΕ;
       </div>
 
-      <label style="display:block; font-size:16px; font-weight:bold; margin:10px 0;">
-        <input type="checkbox" id="willAddCrew" style="width:20px; height:20px; margin-right:8px; vertical-align:middle;">
-        Θα προσθέσετε νέο μέλος στο πλήρωμα;
-      </label>
+      <label style="display:none;">
+  <input type="checkbox" id="changeWosrCrew" checked>
+</label>
 
       <label style="display:block; font-size:16px; font-weight:bold; margin:10px 0;">
         <input type="checkbox" id="willRemoveCrew" style="width:20px; height:20px; margin-right:8px; vertical-align:middle;">
@@ -3114,7 +3113,7 @@ ${data.second_captain_name ? `
       ${removeRowsHtml}
     </div>
 
-<div id="wosrChangeBox" style="display:none; border:1px solid #bfb6aa; background:#f7fbff; padding:12px; margin-top:12px; margin-bottom:16px; text-align:left;">
+<div id="wosrChangeBox" style="display:block; border:1px solid #bfb6aa; background:#f7fbff; padding:12px; margin-top:12px; margin-bottom:16px; text-align:left;">
   <div id="wosrRequiredNote" style="display:none; background:#ffecec; color:#b00020; border:1px solid #b00020; padding:8px; margin-bottom:10px; text-align:center; font-weight:bold;">
     Αφαιρείται μέλος που είχε δηλωθεί ως WS OSR. Πρέπει να δηλωθούν εκ νέου δύο μέλη WS OSR.
   </div>
