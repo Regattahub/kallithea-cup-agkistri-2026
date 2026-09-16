@@ -3008,37 +3008,7 @@ ${data.second_captain_name ? `
       </table>
     </div>
 
-   <div style="border:1px solid #bfb6aa; background:#fffaf0; padding:14px; margin-bottom:18px; text-align:left;">
-  <div style="font-weight:bold; font-size:18px; text-align:center; margin-bottom:10px;">
-    ΔΗΛΩΜΕΝΑ ΜΕΛΗ WS OSR 6.05.3
-  </div>
-
-  <table style="width:100%; border-collapse:collapse; font-size:15px;">
-    <tr>
-      <td style="border:1px solid #bfb6aa; padding:7px; font-weight:bold; width:180px; background:#f1f4ef;">
-        Μέλος 1
-      </td>
-      <td style="border:1px solid #bfb6aa; padding:7px;">
-        ${esc(data.wosr_member_1 || "Δεν έχει καταχωρηθεί")}
-      </td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #bfb6aa; padding:7px; font-weight:bold; background:#f1f4ef;">
-        Μέλος 2
-      </td>
-      <td style="border:1px solid #bfb6aa; padding:7px;">
-        ${esc(data.wosr_member_2 || "Δεν έχει καταχωρηθεί")}
-      </td>
-    </tr>
-  </table>
-
-  <div style="font-size:13px; color:#7a5a00; margin-top:10px; text-align:center; font-weight:bold;">
-    Αν κάποιο από τα παραπάνω μέλη αφαιρεθεί από το πλήρωμα, θα πρέπει να δηλωθεί αντικαταστάτης.
-  </div>
-</div>
-
-   
-    <div style="border:2px solid #8da170; background:#f8fff1; padding:14px; margin-bottom:16px; text-align:left;">
+<div style="border:2px solid #8da170; background:#f8fff1; padding:14px; margin-bottom:16px; text-align:left;">
       <div style="font-weight:bold; font-size:18px; text-align:center; margin-bottom:12px;">
         ΤΙ ΑΛΛΑΓΗ ΘΕΛΕΤΕ ΝΑ ΚΑΝΕΤΕ;
       </div>
@@ -3115,7 +3085,7 @@ ${data.second_captain_name ? `
       ${removeRowsHtml}
     </div>
 
-<div id="wosrChangeBox" style="display:block; border:1px solid #bfb6aa; background:#f7fbff; padding:12px; margin-top:12px; margin-bottom:16px; text-align:left;">
+<div id="wosrChangeBox" style="display:none; border:1px solid #bfb6aa; background:#f7fbff; padding:12px; margin-top:12px; margin-bottom:16px; text-align:left;">
   <div id="wosrRequiredNote" style="display:none; background:#ffecec; color:#b00020; border:1px solid #b00020; padding:8px; margin-bottom:10px; text-align:center; font-weight:bold;">
     Αφαιρείται μέλος που είχε δηλωθεί ως WS OSR. Πρέπει να δηλωθούν εκ νέου δύο μέλη WS OSR.
   </div>
@@ -3142,157 +3112,137 @@ ${data.second_captain_name ? `
 </div>
   `;
 
-  document.getElementById("willAddCrew").addEventListener("change", function () {
-    document.getElementById("addCrewChangeBox").style.display = this.checked ? "block" : "none";
-  });
+  /*
+   * WS OSR νέα ροή:
+   * - Στην αρχή το πλαίσιο WS OSR είναι κρυφό.
+   * - Εμφανίζεται μόνο αφού έχει γίνει πραγματική προσθήκη
+   *   ή πραγματική επιλογή μέλους για αφαίρεση.
+   * - Οι λίστες γεμίζουν από το τελικό πλήρωμα.
+   */
+  window.hasCompletedCrewChange = function () {
+    const hasAddedMember = Array.from(
+      document.querySelectorAll("#addedCrewTable tbody tr")
+    ).some((row) => String(row.dataset.cardStatus || "") === "valid");
 
-document.getElementById("willRemoveCrew").addEventListener("change", function () {
-  const removeBox = document.getElementById("removeCrewChangeBox");
-  const changeWosrCheckbox = document.getElementById("changeWosrCrew");
-  const wosrBox = document.getElementById("wosrChangeBox");
-  const wosrNote = document.getElementById("wosrRequiredNote");
-  const wosr1 = document.getElementById("wosrMember1Select");
-  const wosr2 = document.getElementById("wosrMember2Select");
+    const hasRemovedMember = Array.from(
+      document.querySelectorAll(".removeCrewCheck")
+    ).some((check) => check.checked);
 
-  if (this.checked) {
-    if (removeBox) removeBox.style.display = "block";
-    return;
-  }
+    return hasAddedMember || hasRemovedMember;
+  };
 
-  // Ο χρήστης ακύρωσε την επιλογή "Θα αφαιρέσετε μέλος/μέλη".
-  // Γυρίζουμε καθαρά στην αρχική κατάσταση.
+  window.updateWosrVisibility = function () {
+    const box = document.getElementById("wosrChangeBox");
+    const hiddenCheckbox = document.getElementById("changeWosrCrew");
+    const select1 = document.getElementById("wosrMember1Select");
+    const select2 = document.getElementById("wosrMember2Select");
 
-  if (removeBox) {
-    removeBox.style.display = "none";
-  }
+    if (!box) return;
 
-  document.querySelectorAll(".removeCrewCheck").forEach((check) => {
-    check.checked = false;
-
-    const label = check.closest("label");
-    if (!label) return;
-
-    label.style.background = "#fff";
-    label.style.borderColor = "#d0c8bd";
-    label.style.color = "";
-    label.style.fontWeight = "";
-
-    const badge = label.querySelector(".removeBadge");
-    if (badge) {
-      badge.remove();
+    // Στη νέα ροή τα WS OSR είναι υποχρεωτικά όταν έχει γίνει αλλαγή.
+    if (hiddenCheckbox) {
+      hiddenCheckbox.checked = true;
     }
-  });
 
-  if (changeWosrCheckbox) {
-    changeWosrCheckbox.checked = false;
-  }
+    if (window.hasCompletedCrewChange()) {
+      box.style.display = "block";
+      refreshWosrSelectors();
+    } else {
+      box.style.display = "none";
+      if (select1) select1.value = "";
+      if (select2) select2.value = "";
+    }
+  };
 
-  if (wosrBox) {
-    wosrBox.style.display = "none";
-  }
-
-  if (wosrNote) {
-    wosrNote.style.display = "none";
-  }
-
-  if (wosr1) {
-    wosr1.value = "";
-  }
-
-  if (wosr2) {
-    wosr2.value = "";
-  }
-
-  refreshWosrSelectors();
-});
-
-document.getElementById("changeWosrCrew").addEventListener("change", function () {
-  if (mustChangeWosrMembers() && !this.checked) {
-    alert("Αφαιρείται μέλος που είχε δηλωθεί ως WS OSR. Πρέπει να δηλωθούν εκ νέου δύο μέλη WS OSR.");
-    this.checked = true;
-  }
-
-  document.getElementById("wosrChangeBox").style.display = this.checked ? "block" : "none";
-  refreshWosrSelectors();
-});
-
-
-document.querySelectorAll(".removeCrewCheck").forEach((check) => {
-  check.addEventListener("change", function () {
-    const label = this.closest("label");
-
-    if (!label) return;
-
-    let badge = label.querySelector(".removeBadge");
+  document.getElementById("willAddCrew").addEventListener("change", function () {
+    const addBox = document.getElementById("addCrewChangeBox");
 
     if (this.checked) {
-      label.style.background = "#ffecec";
-      label.style.borderColor = "#b00020";
-      label.style.color = "#7a0000";
-      label.style.fontWeight = "bold";
-
-      if (!badge) {
-        badge = document.createElement("span");
-        badge.className = "removeBadge";
-        badge.innerText = " — Επιλέχθηκε για αφαίρεση";
-        badge.style.color = "#b00020";
-        badge.style.fontWeight = "bold";
-        label.appendChild(badge);
-      }
+      if (addBox) addBox.style.display = "block";
     } else {
+      if (addBox) addBox.style.display = "none";
+
+      // Αν ακυρωθεί η προσθήκη, καθαρίζουμε τυχόν νέα μέλη.
+      const list = document.getElementById("addedCrewList");
+      if (list) list.innerHTML = "";
+
+      const entryBox = document.getElementById("addedCrewEntryBox");
+      if (entryBox) entryBox.style.display = "none";
+    }
+
+    window.updateWosrVisibility();
+  });
+
+  document.getElementById("willRemoveCrew").addEventListener("change", function () {
+    const removeBox = document.getElementById("removeCrewChangeBox");
+    const note = document.getElementById("wosrRequiredNote");
+
+    if (this.checked) {
+      if (removeBox) removeBox.style.display = "block";
+      window.updateWosrVisibility();
+      return;
+    }
+
+    if (removeBox) removeBox.style.display = "none";
+
+    // Αν ακυρωθεί η αφαίρεση, καθαρίζουμε όλες τις επιλογές αφαίρεσης.
+    document.querySelectorAll(".removeCrewCheck").forEach((check) => {
+      check.checked = false;
+
+      const label = check.closest("label");
+      if (!label) return;
+
       label.style.background = "#fff";
       label.style.borderColor = "#d0c8bd";
       label.style.color = "";
       label.style.fontWeight = "";
 
-      if (badge) {
-        badge.remove();
-      }
-    }
+      const badge = label.querySelector(".removeBadge");
+      if (badge) badge.remove();
+    });
 
-    const changeWosrCheckbox =
-      document.getElementById("changeWosrCrew");
+    if (note) note.style.display = "none";
 
-    const wosrBox =
-      document.getElementById("wosrChangeBox");
+    window.updateWosrVisibility();
+  });
 
-    const wosrNote =
-      document.getElementById("wosrRequiredNote");
+  document.querySelectorAll(".removeCrewCheck").forEach((check) => {
+    check.addEventListener("change", function () {
+      const label = this.closest("label");
+      if (!label) return;
 
-    const wosrChangeRequired =
-      mustChangeWosrMembers();
-
-    if (wosrChangeRequired) {
-      if (changeWosrCheckbox) {
-        changeWosrCheckbox.checked = true;
-      }
-
-      if (wosrBox) {
-        wosrBox.style.display = "block";
-      }
-
-      if (wosrNote) {
-        wosrNote.style.display = "block";
-      }
+      let badge = label.querySelector(".removeBadge");
 
       if (this.checked) {
-        alert(
-          "Το μέλος που επιλέξατε για αφαίρεση είχε δηλωθεί ως μέλος WS OSR 6.05.3. Πρέπει να δηλώσετε εκ νέου δύο μέλη WS OSR."
-        );
-      }
-    } else {
-      if (wosrNote) {
-        wosrNote.style.display = "none";
+        label.style.background = "#ffecec";
+        label.style.borderColor = "#b00020";
+        label.style.color = "#7a0000";
+        label.style.fontWeight = "bold";
+
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "removeBadge";
+          badge.innerText = " — Επιλέχθηκε για αφαίρεση";
+          badge.style.color = "#b00020";
+          badge.style.fontWeight = "bold";
+          label.appendChild(badge);
+        }
+      } else {
+        label.style.background = "#fff";
+        label.style.borderColor = "#d0c8bd";
+        label.style.color = "";
+        label.style.fontWeight = "";
+
+        if (badge) badge.remove();
       }
 
-      if (wosrBox && changeWosrCheckbox) {
-        wosrBox.style.display =
-          changeWosrCheckbox.checked ? "block" : "none";
+      const note = document.getElementById("wosrRequiredNote");
+      if (note) {
+        note.style.display = mustChangeWosrMembers() ? "block" : "none";
       }
-    }
 
-    refreshWosrSelectors();
-   });
+      window.updateWosrVisibility();
+    });
   });
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3453,7 +3403,11 @@ async function searchAndAddAddedCrewMember() {
       entryBox.style.display = "none";
     }
 
-    refreshWosrSelectors();
+    if (window.updateWosrVisibility) {
+      window.updateWosrVisibility();
+    } else {
+      refreshWosrSelectors();
+    }
 
   } catch (err) {
     console.error(err);
@@ -3481,7 +3435,11 @@ function deleteAddedCrewRow(btn) {
     if (list) list.innerHTML = "";
   }
 
-  refreshWosrSelectors();
+  if (window.updateWosrVisibility) {
+    window.updateWosrVisibility();
+  } else {
+    refreshWosrSelectors();
+  }
 }
 
 function renumberAddedCrewRows() {
